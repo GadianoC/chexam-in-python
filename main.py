@@ -7,7 +7,6 @@ from app.ui.processed_image_screen import ProcessedImageScreen
 class BubbleScannerApp(App):
     def build(self):
         sm = ScreenManager()
-        # Navigation function
         def go_to_scanner():
             sm.current = 'scanner'
         sm.add_widget(HomeScreen(name='home', switch_to_scanner=go_to_scanner))
