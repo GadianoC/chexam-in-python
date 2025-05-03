@@ -29,7 +29,6 @@ class CameraWidget(FloatLayout):
         self.current_frame = None
         self._update_ev = None
 
-    # No need for toggle or overlay methods - contour is drawn directly on the frame
 
     def update(self, dt):
         if self.capture is None:
@@ -37,21 +36,16 @@ class CameraWidget(FloatLayout):
             
         ret, frame = self.capture.read()
         if ret:
-            # Store the original frame
             self.current_frame = frame.copy()
             
-            # Process the frame to detect document contours
-            try:
                 # Create a visualization image for display
+            try:
                 display_frame = frame.copy()
                 
-                # Apply image processing to detect the document
-                # We don't need the warped images here, just the corner points
+  
                 _, _, pts = process_document_pipeline(frame, debug=False)
                 
-                # Draw contour directly on the frame if detected
                 if pts is not None and hasattr(pts, 'shape') and pts.shape == (4, 2):
-                    # Convert points to integer for drawing
                     pts_int = pts.astype(np.int32).reshape((-1, 1, 2))
                     
                     # Draw the document contour
