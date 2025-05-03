@@ -63,7 +63,7 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
     # 5. Find contours
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Create a copy of the image for drawing contours
+
     contour_vis = image.copy()
     
     # Draw all contours for visualization
@@ -77,26 +77,24 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
     for contour in contours:
         area = cv2.contourArea(contour)
         
-        # Skip very small contours
+
         if area < 1000:
             continue
-            
-        # Approximate the contour to a polygon
+    
         peri = cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
         
-        # We're looking for quadrilaterals (4 points)
+      
         if len(approx) == 4 and area > max_area:
             biggest_contour = approx
             max_area = area
-    
-    # If no suitable contour is found, use the full image
+   
     if biggest_contour is None:
         logger.warning("No suitable document contour found, using full image")
         h, w = image.shape[:2]
         sheet_pts = np.array([[0, 0], [w, 0], [w, h], [0, h]], dtype=np.float32)
         
-        # Save debug image if requested
+        # Save debug image
         if debug and debug_save_path:
             cv2.imwrite(debug_save_path.replace('.png', '_4_no_contour.png'), image)
         
@@ -108,10 +106,10 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
         
         return warped_color, warped_gray, None
     
-    # Reorder the points for correct perspective transformation
+    # Reorder the points / perspective transformation
     sheet_pts = order_points(biggest_contour.reshape(4, 2))
     
-    # Draw the best contour for visualization
+    # best contour for visualization
     if debug and debug_save_path:
         cv2.drawContours(contour_vis, [biggest_contour], -1, (0, 255, 0), 3)
         cv2.imwrite(debug_save_path.replace('.png', '_4_contour.png'), contour_vis)
@@ -127,16 +125,13 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
         cv2.imwrite(debug_save_path.replace('.png', '_6_warped_gray.png'), warped_gray)
     
     # 9. Enhance the warped grayscale image for better visualization
-    # (We'll let the OCR module handle the actual text extraction preprocessing)
-    
-    # Apply CLAHE for better contrast in the debug image
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     warped_gray_enhanced = clahe.apply(warped_gray)
     
     if debug and debug_save_path:
         cv2.imwrite(debug_save_path.replace('.png', '_6_5_enhanced.png'), warped_gray_enhanced)
     
-    # Save debug images if requested
+    # Save debug images 
     if debug and debug_save_path:
         cv2.imwrite(debug_save_path.replace('.png', '_5_warped_color.png'), warped_color)
         cv2.imwrite(debug_save_path.replace('.png', '_6_warped_gray.png'), warped_gray)
@@ -151,8 +146,6 @@ def detect_sheet_edges(image, debug_save_path=None, debug=False):
     Detect the edges of a bubble sheet in an image.
     Returns the four points of the sheet or None if not found.
     """
-    # This function is now just a wrapper around process_document_pipeline
-    # for backward compatibility
     _, _, sheet_pts = process_document_pipeline(image, debug_save_path, debug)
     return sheet_pts
 
@@ -234,13 +227,10 @@ def four_point_transform(image, pts):
     return warped
 
 def order_points(pts):
-    # pts: shape (4, 2)
     pts = np.array(pts)
-    # Sort by Y (top to bottom)
     sorted_by_y = pts[np.argsort(pts[:, 1])]
     top = sorted_by_y[:2]
     bottom = sorted_by_y[2:]
-    # Sort top and bottom by X (left to right)
     top = top[np.argsort(top[:, 0])]
     bottom = bottom[np.argsort(bottom[:, 0])]
     # Order: top-left, top-right, bottom-right, bottom-left
