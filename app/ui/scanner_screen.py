@@ -23,7 +23,6 @@ class ScannerScreen(Screen):
         btn_row = BoxLayout(size_hint_y=0.1)
         self.capture_btn = Button(text='Capture')
         self.capture_btn.bind(on_press=self.capture_image)
-        # Removed contour toggle button - contour is always shown
         btn_row.add_widget(self.capture_btn)
         self.layout.add_widget(btn_row)
         self.add_widget(self.layout)
@@ -65,7 +64,7 @@ class ScannerScreen(Screen):
         processed = cv2.filter2D(processed, -1, kernel)
         
         # Return the processed grayscale image (not binary)
-        # This preserves the shading information in the bubbles
+        # preserves the shading information in the bubbles
         return processed
 
     def on_enter(self, *args):
@@ -105,8 +104,6 @@ class ScannerScreen(Screen):
         # Generate a binary version optimized for bubble detection
         from ..processing.ocr_processing import preprocess_for_ocr
         
-        # For bubble detection, we want high contrast with clear edges
-        # Use a specialized bubble detection preprocessing
         warped_thresh = self.preprocess_for_bubble_detection(warped_gray)
         
         # Save the processed image for reference
@@ -136,6 +133,3 @@ class ScannerScreen(Screen):
 
     def capture_image(self, *args):
         self.on_image_captured(self.camera_widget.current_frame)
-
-
-    # Removed toggle_contour_display - contour is always shown
