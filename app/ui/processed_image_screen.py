@@ -93,7 +93,6 @@ class ProcessedImageScreen(Screen):
 
     def set_image(self, binary_img, color_img=None):
         # binary_img: numpy array, shape (H, W), dtype=uint8 - binary/thresholded image optimized for bubble detection
-        # color_img: optional color version for analysis
         if binary_img is None:
             return
             
@@ -128,12 +127,9 @@ class ProcessedImageScreen(Screen):
         # Convert to texture
         if len(img_np.shape) == 2:  # Grayscale
             # For grayscale images, apply a colormap to better visualize bubble shading
-            # COLORMAP_BONE provides good visualization of shaded vs unshaded bubbles
             img_np = cv2.applyColorMap(img_np, cv2.COLORMAP_BONE)
-            # Convert BGR to RGB for Kivy
             img_np = img_np[..., ::-1]
-        elif len(img_np.shape) == 3 and img_np.shape[2] == 3:  # BGR
-            # Convert BGR to RGB for Kivy
+        elif len(img_np.shape) == 3 and img_np.shape[2] == 3: 
             img_np = img_np[..., ::-1]
             
         height, width = img_np.shape[:2]
@@ -168,7 +164,6 @@ class ProcessedImageScreen(Screen):
         # Apply current rotation to the image
         rotated_img = np.rot90(self.current_image, self.rotation)
         
-        # If we have a color image, also try that for extraction
         color_img = None
         if self.current_color_image is not None:
             color_img = np.rot90(self.current_color_image, self.rotation)
@@ -223,7 +218,7 @@ class ProcessedImageScreen(Screen):
             methods_box = BoxLayout(orientation='horizontal', size_hint=(0.7, 1))
             for i, (text, method, length) in enumerate(results[:min(5, len(results))]):
                 btn = Button(text=method, size_hint=(1/min(5, len(results)), 1))
-                btn.method_index = i  # Store the index
+                btn.method_index = i  
                 btn.bind(on_press=lambda btn: text_input.setter('text')(text_input, results[btn.method_index][0]))
                 methods_box.add_widget(btn)
             
@@ -257,7 +252,6 @@ class ProcessedImageScreen(Screen):
         if img_np is not None:
             img_to_save = np.rot90(img_np, self.rotation)
             fname = f"processed_{int(time.time())}.png"
-            # Convert RGB back to BGR if needed
             if len(img_to_save.shape) == 3 and img_to_save.shape[2] == 3:
                 img_to_save = img_to_save[..., ::-1]
             cv2.imwrite(fname, img_to_save)
@@ -322,9 +316,7 @@ class ProcessedImageScreen(Screen):
         # Get the current image for analysis - use binary image if available, otherwise color
         source_img = self.current_binary_image if self.current_binary_image is not None else self.current_color_image
         
-        # Fix rotation issue - use correct rotation direction
-        # The rotation parameter represents number of 90-degree clockwise rotations
-        # We need to apply counter-clockwise rotations for correct orientation
+
         rotated_img = np.rot90(source_img, k=(-self.rotation) % 4)
         
         # Also rotate color image for visualization
