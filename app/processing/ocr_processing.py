@@ -12,10 +12,10 @@ if not logger.handlers:
     formatter = logging.Formatter('[%(levelname)s] %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    # Set default level to ERROR to reduce console spam
+    # ERROR handling
     logger.setLevel(logging.ERROR)
 
-# Check for Tesseract path in common locations
+# Check for Tesseract for common locations
 def find_tesseract_path():
     """
     Attempt to find Tesseract OCR installation path on Windows.
@@ -35,7 +35,7 @@ def find_tesseract_path():
     
     return None
 
-# Try to set Tesseract path automatically
+# Tesseract path automatically
 tesseract_path = find_tesseract_path()
 if tesseract_path:
     pytesseract.pytesseract.tesseract_cmd = tesseract_path
@@ -53,7 +53,7 @@ def select_best_preprocessing_method(image):
     Returns:
         String name of the best preprocessing method to use
     """
-    # Ensure we're working with grayscale
+    # working with grayscale
     if len(image.shape) == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     else:
@@ -99,22 +99,19 @@ def preprocess_for_ocr(image, method='auto'):
     else:
         gray = image.copy()
         
-    # If method is 'auto', automatically select the best method based on image characteristics
     if method == 'auto':
         method = select_best_preprocessing_method(gray)
     
     if method == 'high_contrast':
-        # Apply CLAHE with stronger parameters for better contrast
         clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(gray)
         
-        # Apply slight Gaussian blur to reduce noise
         blurred = cv2.GaussianBlur(enhanced, (3, 3), 0)
         
-        # Apply Otsu's thresholding
+        # Otsu's thresholding
         _, binary = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         
-        # Apply morphological operations to clean up the image
+        # morphological operations to clean up the image
         kernel = np.ones((2, 2), np.uint8)
         binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
         
