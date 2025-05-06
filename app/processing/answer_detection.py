@@ -94,7 +94,7 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
     
 
     # First, check if we have enough bubbles to work with
-    if len(bubbles) < 20: s
+    if len(bubbles) < 20: 
         if debug:
             logger.warning(f"Too few bubbles detected: {len(bubbles)}")
         return {}
