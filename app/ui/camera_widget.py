@@ -105,4 +105,3 @@ class CameraWidget(FloatLayout):
     def on_stop(self):
         self.stop_camera()
         
-    # Removed update_contour_overlay - contour is drawn directly on the frame

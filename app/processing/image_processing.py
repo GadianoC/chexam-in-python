@@ -3,14 +3,12 @@ import numpy as np
 import logging
 from . import ocr_processing
 
-# Configure logging
 logger = logging.getLogger("chexam.image_processing")
 if not logger.handlers:
     handler = logging.StreamHandler()
     formatter = logging.Formatter('[%(levelname)s] %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    # Set default level to ERROR to reduce console spam
     logger.setLevel(logging.ERROR)
 
 def process_document_pipeline(image, debug_save_path=None, debug=False):
@@ -28,10 +26,8 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
         warped_gray: Grayscale version of the warped document
         sheet_pts: Four corner points of the detected document (ordered)
     """
-    # Make a copy of the original image
     original = image.copy()
     
-    # Configure logging
     if debug:
         logger.setLevel(logging.DEBUG)
     else:
@@ -66,7 +62,6 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
 
     contour_vis = image.copy()
     
-    # Draw all contours for visualization
     if debug:
         cv2.drawContours(contour_vis, contours, -1, (0, 255, 0), 2)
     
@@ -94,11 +89,9 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
         h, w = image.shape[:2]
         sheet_pts = np.array([[0, 0], [w, 0], [w, h], [0, h]], dtype=np.float32)
         
-        # Save debug image
         if debug and debug_save_path:
             cv2.imwrite(debug_save_path.replace('.png', '_4_no_contour.png'), image)
         
-        # Create placeholder warped images
         warped_color = image.copy()
         warped_gray = gray.copy()
         warped_thresh = cv2.adaptiveThreshold(warped_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
@@ -109,7 +102,6 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
     # Reorder the points / perspective transformation
     sheet_pts = order_points(biggest_contour.reshape(4, 2))
     
-    # best contour for visualization
     if debug and debug_save_path:
         cv2.drawContours(contour_vis, [biggest_contour], -1, (0, 255, 0), 3)
         cv2.imwrite(debug_save_path.replace('.png', '_4_contour.png'), contour_vis)
@@ -131,13 +123,51 @@ def process_document_pipeline(image, debug_save_path=None, debug=False):
     if debug and debug_save_path:
         cv2.imwrite(debug_save_path.replace('.png', '_6_5_enhanced.png'), warped_gray_enhanced)
     
-    # Save debug images 
     if debug and debug_save_path:
         cv2.imwrite(debug_save_path.replace('.png', '_5_warped_color.png'), warped_color)
         cv2.imwrite(debug_save_path.replace('.png', '_6_warped_gray.png'), warped_gray)
     
-    # Return the processed images and sheet points
+    warped_color, warped_gray = correct_orientation(warped_color, warped_gray, debug_save_path, debug)
+    
     return warped_color, warped_gray, sheet_pts
+
+
+def correct_orientation(color_image, gray_image, debug_save_path=None, debug=False):
+    """
+    Detect and correct the orientation of the image to ensure it's upright.
+    
+    Args:
+        color_image: Color version of the image to correct
+        gray_image: Grayscale version of the image to correct
+        debug_save_path: Path to save debug images (optional)
+        debug: Whether to save debug images and log debug info
+        
+    Returns:
+        corrected_color: Color version of the corrected image
+        corrected_gray: Grayscale version of the corrected image
+    """
+    height, width = gray_image.shape
+    
+    is_portrait = height > width
+    
+    if not is_portrait:
+        logger.info("Image is in landscape orientation, rotating to portrait")
+        corrected_color = cv2.rotate(color_image, cv2.ROTATE_90_CLOCKWISE)
+        corrected_gray = cv2.rotate(gray_image, cv2.ROTATE_90_CLOCKWISE)
+        
+        if debug and debug_save_path:
+            cv2.imwrite(debug_save_path.replace('.png', '_7_rotated_color.png'), corrected_color)
+            cv2.imwrite(debug_save_path.replace('.png', '_8_rotated_gray.png'), corrected_gray)
+    else:
+        corrected_color = color_image
+        corrected_gray = gray_image
+    
+    
+    if debug and debug_save_path:
+        cv2.imwrite(debug_save_path.replace('.png', '_9_final_color.png'), corrected_color)
+        cv2.imwrite(debug_save_path.replace('.png', '_10_final_gray.png'), corrected_gray)
+    
+    return corrected_color, corrected_gray
 
 
 
@@ -183,10 +213,8 @@ def process_document_with_ocr(image, debug_save_path=None, debug=False):
         - sheet_pts: Four corner points of the detected document (ordered)
         - ocr_results: Results from OCR processing including text and bubbles
     """
-    # First, process the document using OpenCV for document detection
     warped_color, warped_gray, sheet_pts = process_document_pipeline(image, debug_save_path, debug)
     
-    # If document detection failed, return early
     if sheet_pts is None:
         logger.warning("Document detection failed, OCR processing skipped")
         return {
@@ -200,7 +228,6 @@ def process_document_with_ocr(image, debug_save_path=None, debug=False):
     logger.debug("Processing document with Tesseract OCR...")
     ocr_results = ocr_processing.process_document_with_ocr(warped_color, debug_save_path, debug)
     
-    # Return combined results
     return {
         'warped_color': warped_color,
         'warped_gray': warped_gray,

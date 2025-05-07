@@ -71,15 +71,15 @@ def select_best_preprocessing_method(image):
     entropy = -np.sum(hist_normalized * np.log2(hist_normalized + 1e-7))
     
     # Decision logic based on image characteristics
-    if std_val < 40:  # Low contrast image
+    if std_val < 40:  
         return 'high_contrast'
-    elif entropy > 7.0:  # High detail/noise image
+    elif entropy > 7.0: 
         return 'adaptive'
-    elif mean_val < 100:  # Dark image
+    elif mean_val < 100:  
         return 'high_contrast'
-    elif mean_val > 200:  # Bright image
+    elif mean_val > 200: 
         return 'otsu'
-    else:  # Default case
+    else: 
         return 'adaptive'
 
 def preprocess_for_ocr(image, method='auto'):
@@ -141,47 +141,35 @@ def preprocess_for_ocr(image, method='auto'):
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(gray)
         
-        # Apply bilateral filter to preserve edges while reducing noise
         bilateral = cv2.bilateralFilter(enhanced, 7, 50, 50)
         
-        # Apply adaptive thresholding with optimized parameters
-        # Smaller block size (11) and smaller C value (5) for better local contrast
         binary = cv2.adaptiveThreshold(bilateral, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                       cv2.THRESH_BINARY, 11, 5)
         
-        # Apply morphological operations to clean up the image
-        # Use a slightly larger kernel for closing to connect nearby text
         kernel = np.ones((2, 2), np.uint8)
         binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
         
-        # Apply opening to remove small noise
         kernel_small = np.ones((1, 1), np.uint8)
         binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel_small)
         
         return binary
     
     elif method == 'otsu':
-        # Apply bilateral filter to preserve edges while reducing noise
         bilateral = cv2.bilateralFilter(gray, 9, 75, 75)
         
-        # Apply Otsu's thresholding
         _, binary = cv2.threshold(bilateral, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         
         return binary
     
-    else:  # default method
-        # Apply CLAHE for better contrast
+    else: 
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         enhanced = clahe.apply(gray)
         
-        # Apply slight Gaussian blur to reduce noise
         blurred = cv2.GaussianBlur(enhanced, (3, 3), 0)
         
-        # Apply adaptive thresholding which often works better than Otsu for documents
         binary = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                      cv2.THRESH_BINARY, 11, 2)
         
-        # Apply morphological operations to clean up the image
         kernel = np.ones((1, 1), np.uint8)
         binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
         
@@ -210,11 +198,6 @@ def extract_text(image, lang='eng', config='--psm 6', preprocess_method='default
             os.makedirs(debug_dir, exist_ok=True)
             cv2.imwrite(os.path.join(debug_dir, f'ocr_preprocess_{preprocess_method}.png'), processed_img)
         
-        # Use more advanced Tesseract configuration
-        # --psm 6: Assume a single uniform block of text
-        # --oem 3: Use LSTM neural network mode
-        # -l eng: Use English language
-        # --dpi 300: Assume 300 DPI for better recognition
         advanced_config = f'--psm 6 --oem 3 -l {lang} --dpi 300'
         
         # Extract text using Tesseract with advanced configuration
@@ -244,10 +227,8 @@ def extract_text_with_all_methods(image, lang='eng'):
         results.append((text, method, len(text)))
         logger.debug(f"Method {method} extracted {len(text)} characters")
     
-    # Sort by text length (longer is usually better)
     results.sort(key=lambda x: x[2], reverse=True)
     
-    # Return the best result
     return results[0][0], results[0][1]
 
 def extract_text_blocks(image, lang='eng', preprocess_method='default'):
@@ -263,20 +244,16 @@ def extract_text_blocks(image, lang='eng', preprocess_method='default'):
         List of dictionaries with text and bounding box information
     """
     try:
-        # Preprocess the image for better OCR results
         processed_img = preprocess_for_ocr(image, preprocess_method)
         
-        # Extract text blocks using Tesseract
         custom_config = r'--oem 3 --psm 11'
         data = pytesseract.image_to_data(processed_img, lang=lang, config=custom_config, output_type=pytesseract.Output.DICT)
         
-        # Organize the results
         blocks = []
         n_boxes = len(data['text'])
         
         for i in range(n_boxes):
-            # Skip empty text and low confidence results
-            if int(data['conf'][i]) > 30:  # Only consider text with confidence > 30
+            if int(data['conf'][i]) > 30: 
                 text = data['text'][i].strip()
                 if text:
                     x, y, w, h = data['left'][i], data['top'][i], data['width'][i], data['height'][i]
@@ -346,7 +323,6 @@ def detect_bubbles(image, min_radius=10, max_radius=30):
                 radius = int(radius)
                 
                 # Check if the bubble is filled using a more robust method
-                # Create a mask for the bubble
                 mask = np.zeros(gray.shape, dtype=np.uint8)
                 cv2.circle(mask, center, radius, 255, -1)
                 
@@ -354,31 +330,23 @@ def detect_bubbles(image, min_radius=10, max_radius=30):
                 mean_val = cv2.mean(gray, mask=mask)[0]
                 
                 # Calculate the standard deviation inside the bubble
-                # This helps distinguish between filled and unfilled bubbles
                 mean, stddev = cv2.meanStdDev(gray, mask=mask)
                 
                 # Calculate the histogram of the bubble area
                 hist = cv2.calcHist([gray], [0], mask, [256], [0, 256])
                 hist = hist.flatten() / np.sum(hist)  # Normalize
                 
-                # Calculate the darkness ratio (percentage of dark pixels)
-                # This is more robust than just using the mean value
-                dark_pixels_ratio = np.sum(hist[:128]) / np.sum(hist)  # Ratio of pixels darker than middle gray
+                dark_pixels_ratio = np.sum(hist[:128]) / np.sum(hist)  
                 
-                # If the average intensity is below a threshold, consider it filled
-                # Adjust threshold based on the overall image brightness
                 overall_mean = np.mean(gray)
-                intensity_threshold = overall_mean * 0.85  # Adaptive threshold based on image brightness
-                darkness_threshold = 0.5  # At least 50% of pixels should be dark
+                intensity_threshold = overall_mean * 0.85 
+                darkness_threshold = 0.5 
                 
-                # Use both criteria for more robust detection
                 filled = (mean_val < intensity_threshold) or (dark_pixels_ratio > darkness_threshold)
                 
-                # Calculate a more nuanced confidence score
-                # Higher confidence for darker bubbles and lower standard deviation
                 darkness_score = 1.0 - (mean_val / 255.0)
-                uniformity_score = 1.0 - min(stddev[0][0] / 128.0, 1.0)  # Lower stddev means more uniform filling
-                confidence = (darkness_score * 0.7) + (uniformity_score * 0.3)  # Weighted combination
+                uniformity_score = 1.0 - min(stddev[0][0] / 128.0, 1.0) 
+                confidence = (darkness_score * 0.7) + (uniformity_score * 0.3) 
                 
                 bubbles.append({
                     'center': center,

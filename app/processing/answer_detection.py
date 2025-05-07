@@ -25,13 +25,11 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     
-    # Ensure image is grayscale
     if len(warped_img.shape) == 3:
         gray = cv2.cvtColor(warped_img, cv2.COLOR_BGR2GRAY)
     else:
         gray = warped_img.copy()
     
-    # Apply thresholding if not already binary
     if gray.max() > 1:
         _, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
     else:
@@ -40,38 +38,29 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
     if debug and debug_save_path:
         cv2.imwrite(debug_save_path + '_binary.png', binary)
     
-    # Find all contours
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
-    # Filter contours by size and shape to find bubbles
     bubbles = []
     for contour in contours:
         area = cv2.contourArea(contour)
         perimeter = cv2.arcLength(contour, True)
         
-        # Skip very small contours
-        if area < 100:  # Minimum area threshold
+        if area < 100: 
             continue
             
-        # Circularity = 4π(area/perimeter²)
-        # Perfect circle has circularity = 1
         if perimeter > 0:
             circularity = 4 * np.pi * (area / (perimeter * perimeter))
         else:
             circularity = 0
             
-        # Filter by circularity to find bubble-like shapes
         if 0.5 < circularity < 1.2:  
             x, y, w, h = cv2.boundingRect(contour)
             aspect_ratio = float(w) / h
-            
-            # Bubbles should be roughly circular
             if 0.8 < aspect_ratio < 1.2:
                 mask = np.zeros_like(gray)
                 cv2.drawContours(mask, [contour], 0, 255, -1)
                 fill_percentage = np.sum(binary[mask == 255]) / np.sum(mask == 255) if np.sum(mask == 255) > 0 else 0
                 
-                # Consider it filled if more than 40% is filled
                 if fill_percentage > 0.4:
                     center_x = x + w/2
                     center_y = y + h/2
@@ -84,34 +73,25 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
     if debug:
         logger.debug(f"Found {len(bubbles)} potential filled bubbles")
         
-    # If no bubbles found, return empty result
     if not bubbles:
         return {}
     
 
-    # Sort bubbles by y-coordinate (row)
+    bubbles.sort(key=lambda b: b['center'][1])
     bubbles.sort(key=lambda b: b['center'][1])
     
 
-    # First, check if we have enough bubbles to work with
     if len(bubbles) < 20: 
         if debug:
             logger.warning(f"Too few bubbles detected: {len(bubbles)}")
         return {}
     
-    # Get image dimensions
     h, w = warped_img.shape[:2]
     
-    # Organize bubbles into a grid structure
-    # For a typical bubble sheet, we expect:
-    # - 60 questions (rows)
-    # - 4 options per question (columns: A, B, C, D)
-    # - Often organized in 3 columns of 20 questions each
     
-    # Step 1: Determine the average bubble size
     avg_area = sum(b['area'] for b in bubbles) / len(bubbles)
     
-    # Step 2: Group bubbles by their y-coordinate (rows)
+    
     row_tolerance = int(math.sqrt(avg_area) * 0.7) 
     
     bubbles_by_y = sorted(bubbles, key=lambda b: b['center'][1])
@@ -124,7 +104,6 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
         if abs(bubble['center'][1] - current_row[0]['center'][1]) < row_tolerance:
             current_row.append(bubble)
         else:
-            # Sort bubbles in this row by x-coordinate
             current_row.sort(key=lambda b: b['center'][0])
             rows.append(current_row)
             current_row = [bubble]
@@ -136,9 +115,7 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
 
     rows.sort(key=lambda row: row[0]['center'][1])
     
-    # Step 3: Determine the structure of the bubble sheet
     
-    # Count the number of bubbles in each row to determine the structure
     row_lengths = [len(row) for row in rows]
 
     from collections import Counter
@@ -148,7 +125,6 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
         logger.info(f"Detected {option_count} options per question")
         logger.info(f"Found {len(rows)} rows of bubbles")
     
-    # Map to answers (A, B, C, D)
     answer_options = ['A', 'B', 'C', 'D'][:option_count]
     results = {}
     
@@ -167,7 +143,6 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
             if bubble_index < len(answer_options):
                 results[question_num] = answer_options[bubble_index]
     
-    # For a 60-question sheet with 3 columns, we need to remap the question numbers
 
 
     if 15 <= len(rows) <= 25:
@@ -187,24 +162,19 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
     if debug:
         logger.debug(f"Detected answers: {results}")
         
-        # debug visualization
         if debug_save_path:
-            # Create a color version if the input is grayscale
             if len(warped_img.shape) == 2:
                 debug_img = cv2.cvtColor(warped_img, cv2.COLOR_GRAY2BGR)
             else:
                 debug_img = warped_img.copy()
                 
-            # Draw all detected bubbles
             for bubble in bubbles:
                 center = (int(bubble['center'][0]), int(bubble['center'][1]))
                 radius = int(math.sqrt(bubble['area'] / math.pi))
-                # Draw circle for each bubble??
                 cv2.circle(debug_img, center, radius, (0, 0, 255), 1)
             
-            # Highlight the filled bubbles
+            
             for q_num, answer in results.items():
-                # Find the corresponding bubble
                 for row in rows:
                     for i, bubble in enumerate(row):
                         if i < len(answer_options) and answer_options[i] == answer:
@@ -218,7 +188,6 @@ def detect_bubbles(warped_img, debug=False, debug_save_path=None):
                                        (center[0]-10, center[1]-radius-5),
                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
             
-            # Save the debug image
             cv2.imwrite(debug_save_path + '_detected.png', debug_img)
     
     return results
