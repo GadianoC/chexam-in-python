@@ -1,29 +1,85 @@
 from kivy.uix.screenmanager import Screen
-from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.relativelayout import RelativeLayout
+from kivy.properties import NumericProperty
+
+
+class ResizableButton(Button):
+    font_scaling_factor = NumericProperty(0.4)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.background_normal = ''  # Use background_color directly
+
+    def on_size(self, *args):
+        self.font_size = self.height * self.font_scaling_factor
+
 
 class HomeScreen(Screen):
-    def __init__(self, switch_to_scanner, go_to_answer_key, **kwargs):
+    def __init__(self, switch_to_scanner, switch_to_answer_key, switch_to_analysis, **kwargs):
         super().__init__(**kwargs)
-        layout = BoxLayout(orientation='vertical', spacing=20, padding=40)
 
-        # Welcome label
-        label = Label(text='[b]Welcome to BubbleScanner![/b]', markup=True, font_size=28, size_hint_y=0.7)
+        root_layout = RelativeLayout()
+        background = Image(source='chexambg (1).png', allow_stretch=True, keep_ratio=False)
+        root_layout.add_widget(background)
 
-        # Start Scanning button
-        btn_scanner = Button(text='Start Scanning', size_hint_y=0.3, font_size=22)
-        btn_scanner.bind(on_press=lambda instance: switch_to_scanner())
+        float_layout = FloatLayout()
 
-        # Add button to go to Answer Key screen
-        btn_answer_key = Button(text='Go to Answer Key', size_hint_y=0.3, font_size=22)
-        btn_answer_key.bind(on_press=lambda instance: go_to_answer_key())
+        logo = Image(
+            source='ChexamLogo.png',
+            size_hint=(0.5, 0.5),
+            pos_hint={'center_x': 0.5, 'y': 0.3},
+            allow_stretch=True,
+            keep_ratio=True
+        )
 
-        # Add widgets to layout
-        layout.add_widget(label)
-        layout.add_widget(btn_scanner)
-        layout.add_widget(btn_answer_key)
+        label = Label(
+            text='[b]Welcome to Chexam![/b]',
+            markup=True,
+            font_size=24,
+            size_hint=(None, None),
+            size=(self.width, 40),
+            pos_hint={'center_x': 0.5, 'y': 0.72},
+            color=(0, 0, 0, 1),
+        )
 
-        # Add layout to the screen
-        self.add_widget(layout)
+        # Buttons
+        scan_btn = ResizableButton(
+            text='Start Scanning',
+            size_hint=(0.4, 0.07),
+            pos_hint={'center_x': 0.5, 'y': 0.22},
+            background_color=(0, 1, 0, 1),  # Green
+            color=(1, 1, 1, 1),
+        )
+        scan_btn.bind(on_press=lambda instance: switch_to_scanner())
 
+        answer_key_btn = ResizableButton(
+            text='Set Answer Key',
+            size_hint=(0.4, 0.07),
+            pos_hint={'center_x': 0.5, 'y': 0.14},
+            background_color=(0, 0, 1, 1),  # Blue
+            color=(1, 1, 1, 1),
+        )
+        answer_key_btn.bind(on_press=lambda instance: switch_to_answer_key())
+
+        analysis_btn = ResizableButton(
+            text='Analysis',
+            size_hint=(0.4, 0.07),
+            pos_hint={'center_x': 0.5, 'y': 0.06},
+            background_color=(1, 0, 0, 1),  # Red
+            color=(1, 1, 1, 1),
+        )
+        analysis_btn.bind(on_press=lambda instance: switch_to_analysis())
+
+        # Add widgets
+        float_layout.add_widget(logo)
+        float_layout.add_widget(label)
+        float_layout.add_widget(scan_btn)
+        float_layout.add_widget(answer_key_btn)
+        float_layout.add_widget(analysis_btn)
+
+        root_layout.add_widget(float_layout)
+        self.add_widget(root_layout)

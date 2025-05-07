@@ -4,6 +4,7 @@ import pytesseract
 import logging
 import os
 from pathlib import Path
+import pytesseract
 
 # Configure logging
 logger = logging.getLogger("chexam.ocr_processing")
