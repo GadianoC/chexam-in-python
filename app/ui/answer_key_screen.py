@@ -15,6 +15,12 @@ import logging
 class AnswerKeyScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(title="Answer Key Management", **kwargs)
+        
+        # Set bg.png as the background
+        with self.canvas.before:
+            self.bg_rect = Rectangle(source='bg.png', size=self.size, pos=self.pos)
+        self.bind(size=self._update_bg, pos=self._update_bg)
+
         # Set back destination
         self.set_back_destination('home')
         
@@ -37,6 +43,7 @@ class AnswerKeyScreen(BaseScreen):
             btn.color = (1, 1, 1, 1)
             btn.size_hint_y = None
             btn.height = dp(60)
+            btn.width = dp(150)  # Shortened button length
             btn.font_size = dp(18)
             return btn
         
@@ -108,6 +115,10 @@ class AnswerKeyScreen(BaseScreen):
         
         # Add main content to the content area from BaseScreen
         self.content_area.add_widget(main_content)
+
+    def _update_bg(self, *args):
+        self.bg_rect.size = self.size
+        self.bg_rect.pos = self.pos
 
     def on_num_questions_entered(self, instance):
         """Handles validation when pressing enter after entering the number of questions."""

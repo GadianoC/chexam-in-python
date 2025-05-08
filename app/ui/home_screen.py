@@ -1,85 +1,87 @@
-from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.boxlayout import BoxLayout 
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.metrics import dp
+from kivy.graphics import Rectangle
 from .base_screen import BaseScreen
 
 class HomeScreen(BaseScreen):
     def __init__(self, switch_to_scanner, go_to_answer_key, go_to_students, go_to_analysis, **kwargs):
         super().__init__(title="Chexam", **kwargs)
         
-        # Hide back button on home screen
+        # Set background image
+        with self.canvas.before:
+            self.bg_rect = Rectangle(source='bg.png', size=self.size, pos=self.pos)
+        self.bind(size=self._update_bg, pos=self._update_bg)
+
+        # Hide back button
         self.back_btn.opacity = 0
         self.back_btn.disabled = True
         
-        # Create content layout
-        content_layout = BoxLayout(orientation='vertical', spacing=dp(20), padding=dp(15))
+        # Main layout
+        content_layout = BoxLayout(orientation='vertical', spacing=dp(5), padding=dp(10))
 
-        # Welcome label
+        # Title label (black font)
         label = Label(
             text='[b]Welcome to Chexam[/b]', 
             markup=True, 
-            font_size=dp(28), 
+            font_size=dp(24), 
             size_hint_y=None, 
-            height=dp(60)
+            height=dp(50),
+            color=(0, 0, 0, 1)  # Black
         )
-        
-        # Description label
+
+        # Logo
+        logo_image = Image(
+            source='ChexamLogo.png',
+            size_hint_y=None,
+            height=dp(200),
+            allow_stretch=True,
+            keep_ratio=True
+        )
+
+        # Description label (black font)
         desc_label = Label(
             text='Scan and analyze bubble sheets easily on your mobile device', 
-            font_size=dp(16), 
+            font_size=dp(14), 
             size_hint_y=None, 
-            height=dp(40),
-            halign='center'
+            height=dp(30),
+            halign='center',
+            color=(0, 0, 0, 1)  # Black
         )
         desc_label.bind(size=desc_label.setter('text_size'))
-        
-        # Button style function
-        def style_button(btn):
-            btn.background_normal = ''
-            btn.background_color = (0.2, 0.6, 1, 1)
-            btn.border = (0, 0, 0, 0)
-            btn.color = (1, 1, 1, 1)
-            btn.size_hint_y = None
-            btn.height = dp(70)
-            btn.font_size = dp(20)
-            return btn
 
-        # Start Scanning button
-        btn_scanner = style_button(Button(text='📷 Start Scanning'))
-        btn_scanner.bind(on_press=lambda instance: switch_to_scanner())
+        # Function to style and center buttons
+        def create_centered_button(text, color, callback):
+            btn = Button(
+                text=text,
+                background_normal='',
+                background_color=color,
+                color=(1, 1, 1, 1),
+                font_size=dp(16),
+                size_hint=(None, None),
+                height=dp(50),
+                width=dp(250)
+            )
+            btn.bind(on_press=lambda instance: callback())
+            anchor = AnchorLayout(anchor_x='center')
+            anchor.add_widget(btn)
+            return anchor
 
-        # Add button to go to Answer Key screen
-        btn_answer_key = style_button(Button(text='🔑 Answer Key Management'))
-        btn_answer_key.bind(on_press=lambda instance: go_to_answer_key())
-        
-        # Add button to go to Students screen
-        btn_students = style_button(Button(text='👥 Student Management'))
-        btn_students.bind(on_press=lambda instance: go_to_students())
-        
-        # Add button to go to Analysis screen
-        btn_analysis = style_button(Button(text='📊 Class Analysis'))
-        btn_analysis.bind(on_press=lambda instance: go_to_analysis())
-        
-        # Add spacers for better layout
-        top_spacer = BoxLayout(size_hint_y=None, height=dp(20))
-        bottom_spacer = BoxLayout(size_hint_y=None, height=dp(20))
+        # Add components in the right order
+        content_layout.add_widget(label)                # Title above logo
+        content_layout.add_widget(logo_image)           # Logo
+        content_layout.add_widget(desc_label)           # Description below logo
+        content_layout.add_widget(create_centered_button('📷 Start Scanning', (0, 0.75, 0.39, 1), switch_to_scanner))
+        content_layout.add_widget(create_centered_button('🔑 Answer Key Management', (1.0, 0.3529, 0.3333, 1), go_to_answer_key))
+        content_layout.add_widget(create_centered_button('👥 Student Management', (0.2745, 0.651, 1.0, 1), go_to_students))
+        content_layout.add_widget(create_centered_button('📊 Class Analysis', (1.0, 0.576, 0.2745, 1), go_to_analysis))
 
-        # Add widgets to content layout
-        content_layout.add_widget(top_spacer)
-        content_layout.add_widget(label)
-        content_layout.add_widget(desc_label)
-        content_layout.add_widget(BoxLayout(size_hint_y=None, height=dp(30)))
-        content_layout.add_widget(btn_scanner)
-        content_layout.add_widget(BoxLayout(size_hint_y=None, height=dp(10)))
-        content_layout.add_widget(btn_answer_key)
-        content_layout.add_widget(BoxLayout(size_hint_y=None, height=dp(10)))
-        content_layout.add_widget(btn_students)
-        content_layout.add_widget(BoxLayout(size_hint_y=None, height=dp(10)))
-        content_layout.add_widget(btn_analysis)
-        content_layout.add_widget(bottom_spacer)
-
-        # Add content layout to the content area
+        # Add to main screen
         self.content_area.add_widget(content_layout)
 
+    def _update_bg(self, *args):
+        self.bg_rect.size = self.size
+        self.bg_rect.pos = self.pos

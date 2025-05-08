@@ -6,6 +6,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
 from kivy.metrics import dp
+from kivy.graphics import Rectangle, Color
 
 from app.db.student_db import (
     get_all_students, add_student, delete_student,
@@ -24,14 +25,23 @@ class StudentScreen(BaseScreen):
         self.selected_student_id = None
         self.selected_answer_key_id = None
         
-        # Create main content layout with proper sizing
-        main_content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(15), size_hint=(1, 1))
+        # Create main content layout with optimized spacing for mobile
+        main_content = BoxLayout(orientation='vertical', spacing=dp(8), padding=dp(10), size_hint=(1, 1))
         
-        # Content area - takes full available space
-        content = BoxLayout(orientation='horizontal', spacing=dp(10), size_hint=(1, 1))
+        # Add background image
+        with main_content.canvas.before:
+            self.bg_color = Color(1, 1, 1, 1)  # Default white background
+            self.bg_rect = Rectangle(source='bg.png', size=main_content.size, pos=main_content.pos)
         
-        # Left panel - Student list and controls
-        left_panel = BoxLayout(orientation='vertical', spacing=dp(10), size_hint_x=0.4, size_hint_y=1)
+        # Update background size and position when layout changes
+        def update_bg(instance, value):
+            self.bg_rect.size = instance.size
+            self.bg_rect.pos = instance.pos
+        
+        main_content.bind(size=update_bg, pos=update_bg)
+        
+        # Content area - vertical layout for better mobile usability
+        content = BoxLayout(orientation='vertical', spacing=dp(8), size_hint=(1, 1))
         
         # Style function for buttons
         def style_button(btn, primary=True):
@@ -42,20 +52,21 @@ class StudentScreen(BaseScreen):
                 btn.background_color = (0.6, 0.6, 0.6, 1)
             btn.color = (1, 1, 1, 1)
             btn.size_hint_y = None
-            btn.height = dp(50)
-            btn.font_size = dp(16)
+            btn.height = dp(48)
+            btn.font_size = dp(14)
+            btn.radius = [dp(12)]  # Rounded corners for better aesthetics
             return btn
         
         # Add student section
-        add_section = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(60), spacing=dp(10))
+        add_section = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(56), spacing=dp(8))
         self.student_input = TextInput(
-            hint_text='Student Name', 
+            hint_text='Enter Student Name', 
             multiline=False, 
             size_hint_x=0.7,
-            font_size=dp(16),
-            padding=[dp(10), dp(10), dp(10), dp(10)]
+            font_size=dp(14),
+            padding=[dp(8), dp(8), dp(8), dp(8)]
         )
-        add_btn = style_button(Button(text='Add Student'), primary=True)
+        add_btn = style_button(Button(text='Add'), primary=True)
         add_btn.size_hint_x = 0.3
         add_btn.bind(on_press=self.add_new_student)
         add_section.add_widget(self.student_input)
@@ -64,97 +75,80 @@ class StudentScreen(BaseScreen):
         # Student list with scroll view
         list_label = Label(
             text='Students', 
-            font_size=dp(20), 
+            font_size=dp(18), 
             size_hint_y=None, 
-            height=dp(40),
+            height=dp(32),
             color=(0.2, 0.6, 1, 1),
             bold=True
         )
         
-        # Scrollable student list with better height
-        scroll_view = ScrollView(size_hint_y=None, height=dp(250))
-        self.student_list = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, padding=dp(10))
+        scroll_view = ScrollView(size_hint=(1, None), height=dp(200))
+        self.student_list = GridLayout(cols=1, spacing=dp(6), size_hint_y=None, padding=dp(8))
         self.student_list.bind(minimum_height=self.student_list.setter('height'))
         scroll_view.add_widget(self.student_list)
         
         # Student management buttons
-        student_buttons = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(60), spacing=dp(10))
-        
-        # Delete button with fixed width text
+        student_buttons = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(48), spacing=dp(8))
         delete_btn = style_button(Button(text='Delete'), primary=False)
         delete_btn.size_hint_x = 0.5
         delete_btn.bind(on_press=self.delete_selected_student)
-        
-        # Initialize student button with fixed width text
         init_btn = style_button(Button(text='Example Data'), primary=True)
         init_btn.size_hint_x = 0.5
         init_btn.bind(on_press=self.initialize_students)
-        
         student_buttons.add_widget(delete_btn)
         student_buttons.add_widget(init_btn)
         
-        # Answer key section header
+        # Answer key section
         key_header = Label(
             text='Answer Key Selection', 
-            font_size=dp(20), 
+            font_size=dp(18), 
             size_hint_y=None, 
-            height=dp(40),
+            height=dp(32),
             color=(0.2, 0.6, 1, 1),
             bold=True
         )
-        
-        # Answer key selection
-        key_section = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(100), spacing=dp(10))
+        key_section = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(80), spacing=dp(8))
         key_label = Label(
             text='Select Answer Key:', 
             size_hint_y=None,
-            height=dp(30),
-            font_size=dp(16)
+            height=dp(24),
+            font_size=dp(14),
+            color=(0, 0, 0, 1)  # Black color for label
         )
-        self.key_buttons = BoxLayout(orientation='horizontal', spacing=dp(5), size_hint_y=None, height=dp(50))
+        self.key_buttons = BoxLayout(orientation='horizontal', spacing=dp(6), size_hint_y=None, height=dp(40))
         key_section.add_widget(key_label)
         key_section.add_widget(self.key_buttons)
         
         # Analysis button
-        analyze_btn = style_button(Button(text='Analyze Selected Student'), primary=True)
+        analyze_btn = style_button(Button(text='Analyze'), primary=True)
         analyze_btn.bind(on_press=self.analyze_selected_student)
         
         # Analysis results header
         results_label = Label(
             text='Analysis Results', 
-            font_size=dp(20), 
+            font_size=dp(18), 
             size_hint_y=None, 
-            height=dp(40),
+            height=dp(32),
             color=(0.2, 0.6, 1, 1),
             bold=True
         )
         
-        # Scrollable results view - increased height and improved layout
-        results_scroll = ScrollView(size_hint_y=1)  
-        self.results_layout = GridLayout(cols=1, spacing=dp(10), size_hint_y=None, size_hint_x=1, padding=dp(10))
+        # Scrollable results view
+        results_scroll = ScrollView(size_hint=(1, 1))  
+        self.results_layout = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, size_hint_x=1, padding=dp(8))
         self.results_layout.bind(minimum_height=self.results_layout.setter('height'))
         results_scroll.add_widget(self.results_layout)
         
-        # Add widgets to left panel
-        left_panel.add_widget(add_section)
-        left_panel.add_widget(list_label)
-        left_panel.add_widget(scroll_view)
-        left_panel.add_widget(student_buttons)
-        
-        # Right panel - Student details and analysis
-        right_panel = BoxLayout(orientation='vertical', spacing=dp(10), size_hint_x=0.6, size_hint_y=1)
-        
-        # Add widgets to right panel
-        right_panel.add_widget(key_header)
-        right_panel.add_widget(key_section)
-        right_panel.add_widget(analyze_btn)
-        right_panel.add_widget(BoxLayout(size_hint_y=None, height=dp(20))) 
-        right_panel.add_widget(results_label)
-        right_panel.add_widget(results_scroll)
-        
-        # Add panels to content area
-        content.add_widget(left_panel)
-        content.add_widget(right_panel)
+        # Add widgets to content
+        content.add_widget(add_section)
+        content.add_widget(list_label)
+        content.add_widget(scroll_view)
+        content.add_widget(student_buttons)
+        content.add_widget(key_header)
+        content.add_widget(key_section)
+        content.add_widget(analyze_btn)
+        content.add_widget(results_label)
+        content.add_widget(results_scroll)
         
         # Add content to main content layout
         main_content.add_widget(content)
@@ -475,14 +469,14 @@ class StudentScreen(BaseScreen):
         content_layout = BoxLayout(orientation='vertical', size_hint_y=None)
         content_layout.bind(minimum_height=content_layout.setter('height'))
         
-        # Content label with proper text wrapping
+        # Content label with proper text wrapping and black color
         content_label = Label(
             text=str(content),
             halign='left',
             valign='top',
             size_hint_y=None,
             text_size=(None, None),
-            color=(1, 1, 1, 1)
+            color=(0, 0, 0, 1)  # Black color for content
         )
         
         # Make sure text wraps properly

@@ -4,6 +4,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.metrics import dp
+from kivy.graphics import Rectangle
 from ..processing.image_processing import process_document_pipeline
 from ..processing.answer_detection import detect_bubbles
 from .base_screen import BaseScreen
@@ -14,6 +15,17 @@ import logging
 class ScannerScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(title="Scanner", **kwargs)
+        
+        # Set bg.png as the background
+        with self.canvas.before:
+            self.bg_rect = Rectangle(source='bg.png', size=self.size, pos=self.pos)
+        self.bind(size=self._update_bg, pos=self._update_bg)
+
+        # Center the "Scanner" text
+        self.title_label.halign = 'center'
+        self.title_label.text_size = self.size
+        self.bind(size=lambda *args: setattr(self.title_label, 'text_size', self.size))
+
         self.set_back_destination('home')
         
         scanner_layout = BoxLayout(orientation='vertical', spacing=dp(10))
@@ -35,7 +47,10 @@ class ScannerScreen(BaseScreen):
         btn_row = BoxLayout(size_hint_y=None, height=dp(80), padding=[dp(20), dp(10), dp(20), dp(10)])
         self.capture_btn = Button(
             text='Capture Photo',
-            font_size=dp(22),
+            font_size=dp(18),
+            size_hint=(None, None),
+            width=dp(200),  # Shortened length
+            height=dp(50),
             background_normal='',
             background_color=(0.2, 0.6, 1, 1),
             color=(1, 1, 1, 1)
@@ -43,9 +58,27 @@ class ScannerScreen(BaseScreen):
         self.capture_btn.bind(on_press=self.capture_image)
         btn_row.add_widget(self.capture_btn)
         scanner_layout.add_widget(btn_row)
+
+        # Add a small "Back" button below the "Capture Photo" button
+        self.back_btn = Button(
+            text='Back',
+            font_size=dp(12),
+            size_hint=(None, None),
+            width=dp(100),
+            height=dp(30),
+            background_normal='',
+            background_color=(0.8, 0.8, 0.8, 1),
+            color=(0, 0, 0, 1)
+        )
+        self.back_btn.bind(on_press=lambda instance: self.go_back())
+        scanner_layout.add_widget(self.back_btn)
         
         self.content_area.add_widget(scanner_layout)
-        
+
+    def _update_bg(self, *args):
+        self.bg_rect.size = self.size
+        self.bg_rect.pos = self.pos
+
     def preprocess_for_bubble_detection(self, gray_img):
         """
         Specialized preprocessing method optimized for bubble detection.
