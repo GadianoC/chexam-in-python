@@ -34,7 +34,10 @@ class AnswerKeyScreen(BaseScreen):
             self.logger.addHandler(handler)
 
         # Create main content layout - vertical for mobile
-        main_content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15))
+        main_content = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(15), size_hint=(1, 1))
+        
+        # Create a ScrollView to make the entire screen scrollable for mobile
+        main_scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
         
         # Style function for buttons
         def style_button(btn):
@@ -113,8 +116,11 @@ class AnswerKeyScreen(BaseScreen):
         self.screen_content_area = BoxLayout(orientation='vertical')
         main_content.add_widget(self.screen_content_area)
         
-        # Add main content to the content area from BaseScreen
-        self.content_area.add_widget(main_content)
+        # Add main content to the scroll view
+        main_scroll.add_widget(main_content)
+        
+        # Add scroll view to the content area from BaseScreen
+        self.content_area.add_widget(main_scroll)
 
     def _update_bg(self, *args):
         self.bg_rect.size = self.size

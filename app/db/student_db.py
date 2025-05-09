@@ -439,7 +439,11 @@ def get_all_analysis_results(answer_key_id=None):
         logger.error(f"Error getting all analysis results: {str(e)}")
         return []
 
-def generate_random_student_data(num_students=30, num_questions=60):
+def generate_answers_for_existing_students(num_questions=60):
+    """
+    Generate random answers for all existing students for all answer keys.
+    This ensures that every student has answers for every answer key.
+    """
     try:
         from app.db.answer_key_db import get_all_answer_keys
         
@@ -448,7 +452,67 @@ def generate_random_student_data(num_students=30, num_questions=60):
             logger.error("No answer keys found. Please create at least one answer key first.")
             return False
         
-        answer_key_id = answer_keys[0]['id']
+        conn = sqlite3.connect(str(DB_PATH))
+        cursor = conn.cursor()
+        
+        # Get all existing students
+        cursor.execute("SELECT id FROM students")
+        student_ids = [row[0] for row in cursor.fetchall()]
+        
+        if not student_ids:
+            logger.info("No existing students found.")
+            conn.close()
+            return True
+        
+        # For each student and answer key combination, check if answers exist
+        answers_added = 0
+        for student_id in student_ids:
+            for answer_key in answer_keys:
+                answer_key_id = answer_key['id']
+                
+                # Check if answers already exist for this student and answer key
+                cursor.execute(
+                    "SELECT id FROM student_answers WHERE student_id = ? AND answer_key_id = ?",
+                    (student_id, answer_key_id)
+                )
+                if cursor.fetchone():
+                    continue  # Answers already exist, skip
+                
+                # Generate random answers for this student and answer key
+                answers = {str(q): random.choice(['A', 'B', 'C', 'D']) for q in range(1, num_questions + 1)}
+                answers_json = json.dumps(answers)
+                
+                try:
+                    cursor.execute(
+                        "INSERT INTO student_answers (student_id, answer_key_id, answers) VALUES (?, ?, ?)",
+                        (student_id, answer_key_id, answers_json)
+                    )
+                    answers_added += 1
+                except sqlite3.IntegrityError as e:
+                    logger.warning(f"Skipping duplicate answer for student ID {student_id} and answer key ID {answer_key_id}")
+                    continue
+        
+        conn.commit()
+        conn.close()
+        
+        if answers_added > 0:
+            logger.info(f"Generated {answers_added} answer sets for existing students")
+        else:
+            logger.info("All existing students already have answers for all answer keys")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error generating answers for existing students: {str(e)}")
+        return False
+
+def generate_random_student_data(num_students=30, num_questions=60):
+    try:
+        from app.db.answer_key_db import get_all_answer_keys
+        
+        answer_keys = get_all_answer_keys()
+        if not answer_keys:
+            logger.error("No answer keys found. Please create at least one answer key first.")
+            return False
         
         conn = sqlite3.connect(str(DB_PATH))
         cursor = conn.cursor()
@@ -469,26 +533,74 @@ def generate_random_student_data(num_students=30, num_questions=60):
             "Hill", "Scott", "Green", "Adams", "Baker", "Gonzalez", "Nelson", "Carter"
         ]
         
-        for i in range(num_students):
+        # Get existing student names to avoid duplicates
+        cursor.execute("SELECT name FROM students")
+        existing_names = set(row[0] for row in cursor.fetchall())
+        
+        students_added = 0
+        max_attempts = num_students * 3  # Limit attempts to avoid infinite loop
+        attempts = 0
+        
+        # Create a list to store the student IDs we create
+        created_student_ids = []
+        
+        while students_added < num_students and attempts < max_attempts:
+            attempts += 1
             first_name = random.choice(first_names)
             last_name = random.choice(last_names)
             name = f"{first_name} {last_name}"
             
-            cursor.execute("INSERT INTO students (name) VALUES (?)", (name,))
-            student_id = cursor.lastrowid
+            # Add a unique identifier if we're running out of name combinations
+            if attempts > len(first_names) * len(last_names) / 2:
+                name = f"{first_name} {last_name} {random.randint(1, 999)}"
             
-            answers = {str(q): random.choice(['A', 'B', 'C', 'D']) for q in range(1, num_questions + 1)}
-            answers_json = json.dumps(answers)
-            
-            cursor.execute(
-                "INSERT INTO student_answers (student_id, answer_key_id, answers) VALUES (?, ?, ?)",
-                (student_id, answer_key_id, answers_json)
-            )
+            # Skip if name already exists
+            if name in existing_names:
+                continue
+                
+            try:
+                cursor.execute("INSERT INTO students (name) VALUES (?)", (name,))
+                student_id = cursor.lastrowid
+                existing_names.add(name)  # Add to our local set to track duplicates
+                created_student_ids.append(student_id)
+                students_added += 1
+            except sqlite3.IntegrityError as e:
+                # Skip this name if there's a constraint violation
+                logger.warning(f"Skipping duplicate name: {name}")
+                continue
+        
+        # Now create answers for each student for each answer key
+        answers_added = 0
+        for student_id in created_student_ids:
+            for answer_key in answer_keys:
+                answer_key_id = answer_key['id']
+                
+                # Generate random answers for this student and answer key
+                answers = {str(q): random.choice(['A', 'B', 'C', 'D']) for q in range(1, num_questions + 1)}
+                answers_json = json.dumps(answers)
+                
+                try:
+                    cursor.execute(
+                        "INSERT INTO student_answers (student_id, answer_key_id, answers) VALUES (?, ?, ?)",
+                        (student_id, answer_key_id, answers_json)
+                    )
+                    answers_added += 1
+                except sqlite3.IntegrityError as e:
+                    logger.warning(f"Skipping duplicate answer for student ID {student_id} and answer key ID {answer_key_id}")
+                    continue
         
         conn.commit()
         conn.close()
-        logger.info(f"Generated {num_students} random students with answers for {num_questions} questions")
-        return True
+        
+        # Also generate answers for any existing students that might not have answers for all answer keys
+        generate_answers_for_existing_students(num_questions)
+        
+        if students_added == num_students:
+            logger.info(f"Generated {students_added} random students with answers for all {len(answer_keys)} answer keys ({answers_added} total answer sets)")
+            return True
+        else:
+            logger.warning(f"Only generated {students_added} out of {num_students} requested students")
+            return students_added > 0
     except Exception as e:
         logger.error(f"Error generating random student data: {str(e)}")
         return False

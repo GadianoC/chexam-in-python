@@ -20,7 +20,10 @@ class AnalysisScreen(BaseScreen):
         self.class_analysis_result = None
         
         # Create main content layout
-        main_content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(15))
+        main_content = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(15), size_hint=(1, 1))
+        
+        # Create a ScrollView to make the entire screen scrollable for mobile
+        main_scroll = ScrollView(size_hint=(1, 1), do_scroll_x=False)
         
         # Content area
         content = BoxLayout(orientation='vertical', spacing=dp(10))
@@ -100,8 +103,11 @@ class AnalysisScreen(BaseScreen):
         # Add content to main content layout
         main_content.add_widget(content)
         
-        # Add main content to the content area from BaseScreen
-        self.content_area.add_widget(main_content)
+        # Add main content to the scroll view
+        main_scroll.add_widget(main_content)
+        
+        # Add scroll view to the content area from BaseScreen
+        self.content_area.add_widget(main_scroll)
     
     def on_pre_enter(self):
         """Called before the screen is displayed."""

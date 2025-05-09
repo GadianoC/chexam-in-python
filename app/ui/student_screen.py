@@ -10,7 +10,7 @@ from kivy.graphics import Rectangle, Color
 
 from app.db.student_db import (
     get_all_students, add_student, delete_student,
-    get_analysis_result
+    get_analysis_result, generate_answers_for_existing_students
 )
 from app.db.answer_key_db import get_all_answer_keys
 from api.analyze_all import analyze_student
@@ -25,23 +25,21 @@ class StudentScreen(BaseScreen):
         self.selected_student_id = None
         self.selected_answer_key_id = None
         
-        # Create main content layout with optimized spacing for mobile
-        main_content = BoxLayout(orientation='vertical', spacing=dp(8), padding=dp(10), size_hint=(1, 1))
+        # Create a simple layout structure
+        layout = BoxLayout(orientation='vertical')
         
-        # Add background image
-        with main_content.canvas.before:
-            self.bg_color = Color(1, 1, 1, 1)  # Default white background
-            self.bg_rect = Rectangle(source='bg.png', size=main_content.size, pos=main_content.pos)
+        # Create a ScrollView that will contain all our content
+        scroll = ScrollView()
         
-        # Update background size and position when layout changes
-        def update_bg(instance, value):
-            self.bg_rect.size = instance.size
-            self.bg_rect.pos = instance.pos
+        # Create a layout that will contain all the scrollable content
+        # Using a GridLayout with one column works better for scrolling
+        self.container = GridLayout(cols=1, spacing=10, padding=10, size_hint_y=None)
         
-        main_content.bind(size=update_bg, pos=update_bg)
+        # Important: bind the height to the container's minimum height
+        # This makes scrolling work properly
+        self.container.bind(minimum_height=self.container.setter('height'))
         
-        # Content area - vertical layout for better mobile usability
-        content = BoxLayout(orientation='vertical', spacing=dp(8), size_hint=(1, 1))
+        # We'll add widgets directly to the container instead of using a separate content layout
         
         # Style function for buttons
         def style_button(btn, primary=True):
@@ -82,21 +80,26 @@ class StudentScreen(BaseScreen):
             bold=True
         )
         
-        scroll_view = ScrollView(size_hint=(1, None), height=dp(200))
+        # Student list with its own scroll view and reduced fixed height
+        student_scroll = ScrollView(size_hint=(1, None), height=dp(150))
         self.student_list = GridLayout(cols=1, spacing=dp(6), size_hint_y=None, padding=dp(8))
         self.student_list.bind(minimum_height=self.student_list.setter('height'))
-        scroll_view.add_widget(self.student_list)
+        student_scroll.add_widget(self.student_list)
         
         # Student management buttons
         student_buttons = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(48), spacing=dp(8))
         delete_btn = style_button(Button(text='Delete'), primary=False)
-        delete_btn.size_hint_x = 0.5
+        delete_btn.size_hint_x = 0.33
         delete_btn.bind(on_press=self.delete_selected_student)
         init_btn = style_button(Button(text='Example Data'), primary=True)
-        init_btn.size_hint_x = 0.5
+        init_btn.size_hint_x = 0.33
         init_btn.bind(on_press=self.initialize_students)
+        gen_answers_btn = style_button(Button(text='Gen Answers'), primary=True)
+        gen_answers_btn.size_hint_x = 0.34
+        gen_answers_btn.bind(on_press=self.generate_answers_for_all)
         student_buttons.add_widget(delete_btn)
         student_buttons.add_widget(init_btn)
+        student_buttons.add_widget(gen_answers_btn)
         
         # Answer key section
         key_header = Label(
@@ -123,7 +126,7 @@ class StudentScreen(BaseScreen):
         analyze_btn = style_button(Button(text='Analyze'), primary=True)
         analyze_btn.bind(on_press=self.analyze_selected_student)
         
-        # Analysis results header
+        # Analysis results section
         results_label = Label(
             text='Analysis Results', 
             font_size=dp(18), 
@@ -133,28 +136,31 @@ class StudentScreen(BaseScreen):
             bold=True
         )
         
-        # Scrollable results view
-        results_scroll = ScrollView(size_hint=(1, 1))  
+        # Results layout with its own scroll view and fixed height
+        results_scroll = ScrollView(size_hint=(1, None), height=dp(300))
         self.results_layout = GridLayout(cols=1, spacing=dp(8), size_hint_y=None, size_hint_x=1, padding=dp(8))
         self.results_layout.bind(minimum_height=self.results_layout.setter('height'))
         results_scroll.add_widget(self.results_layout)
         
-        # Add widgets to content
-        content.add_widget(add_section)
-        content.add_widget(list_label)
-        content.add_widget(scroll_view)
-        content.add_widget(student_buttons)
-        content.add_widget(key_header)
-        content.add_widget(key_section)
-        content.add_widget(analyze_btn)
-        content.add_widget(results_label)
-        content.add_widget(results_scroll)
+        # Add widgets directly to the container
+        self.container.add_widget(add_section)
+        self.container.add_widget(list_label)
+        self.container.add_widget(student_scroll)
+        self.container.add_widget(student_buttons)
+        self.container.add_widget(key_header)
+        self.container.add_widget(key_section)
+        self.container.add_widget(analyze_btn)
+        self.container.add_widget(results_label)
+        self.container.add_widget(results_scroll)
         
-        # Add content to main content layout
-        main_content.add_widget(content)
+        # Add the container to the scroll view
+        scroll.add_widget(self.container)
         
-        # Add main content to the content area from BaseScreen
-        self.content_area.add_widget(main_content)
+        # Add the scroll view to the layout
+        layout.add_widget(scroll)
+        
+        # Add the layout to the content area from BaseScreen
+        self.content_area.add_widget(layout)
     
     def on_pre_enter(self):
         """Called before the screen is displayed."""
@@ -295,6 +301,27 @@ class StudentScreen(BaseScreen):
         else:
             self.show_popup('Error', 'Failed to initialize example students. Make sure you have at least one answer key.')
     
+    def generate_answers_for_all(self, instance):
+        """Generate answers for all existing students for all answer keys."""
+        # Show loading popup
+        loading_popup = Popup(
+            title='Generating Answers',
+            content=Label(text='Generating answers for all students... This may take a moment.'),
+            size_hint=(0.6, 0.3)
+        )
+        loading_popup.open()
+        
+        # Generate answers for all existing students
+        success = generate_answers_for_existing_students()
+        
+        # Close loading popup
+        loading_popup.dismiss()
+        
+        if success:
+            self.show_popup('Success', 'Generated answers for all students for all answer keys.')
+        else:
+            self.show_popup('Error', 'Failed to generate answers. Make sure you have at least one answer key.')
+    
     def analyze_selected_student(self, instance):
         """Analyze the selected student's answers."""
         if not self.selected_student_id:
@@ -356,10 +383,10 @@ class StudentScreen(BaseScreen):
             correct_answers = {}
         
         # Display results with larger, more visible text for score and percentage
-        # Create special score display
-        score_container = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(60))
+        # Create special score display with more height and better formatting
+        score_container = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(100), padding=[0, 10, 0, 10])
         score_label = Label(
-            text=f"[b]Score:[/b] [color=00BFFF][size=24]{result['score']}[/size][/color]",
+            text=f"[b]Score:[/b] [color=00BFFF][size=32]{result['score']}[/size][/color]",
             markup=True,
             halign='center',
             valign='middle',
@@ -369,10 +396,10 @@ class StudentScreen(BaseScreen):
         score_container.add_widget(score_label)
         self.results_layout.add_widget(score_container)
         
-        # Create special percentage display
-        percentage_container = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(60))
+        # Create special percentage display with more height and better formatting
+        percentage_container = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(100), padding=[0, 10, 0, 10])
         percentage_label = Label(
-            text=f"[b]Percentage:[/b] [color=00BFFF][size=24]{result['percentage']}%[/size][/color]",
+            text=f"[b]Percentage:[/b] [color=00BFFF][size=32]{result['percentage']}%[/size][/color]",
             markup=True,
             halign='center',
             valign='middle',
@@ -382,8 +409,8 @@ class StudentScreen(BaseScreen):
         percentage_container.add_widget(percentage_label)
         self.results_layout.add_widget(percentage_container)
         
-        # Add a spacer after the score and percentage
-        spacer = BoxLayout(size_hint_y=None, height=dp(10))
+        # Add a larger spacer after the score and percentage
+        spacer = BoxLayout(size_hint_y=None, height=dp(20))
         self.results_layout.add_widget(spacer)
         
         # Format correct questions with answer choices - simplified format
@@ -406,14 +433,14 @@ class StudentScreen(BaseScreen):
                 wrong_items.append(str(q))
         wrong_str = ', '.join(wrong_items)
         
-        # Calculate appropriate heights based on content length with better minimums
-        correct_height = max(dp(100), min(dp(150), dp(60 + len(correct_str) // 20 * 15)))
-        wrong_height = max(dp(100), min(dp(150), dp(60 + len(wrong_str) // 20 * 15)))
+        # Calculate appropriate heights based on content length with better minimums and more space
+        correct_height = max(dp(150), min(dp(250), dp(100 + len(correct_str) // 15 * 15)))
+        wrong_height = max(dp(150), min(dp(250), dp(100 + len(wrong_str) // 15 * 15)))
         
-        # Text sections need more height
-        strengths_height = max(dp(120), min(dp(180), dp(80 + len(result['strengths']) // 50 * 20)))
-        weaknesses_height = max(dp(120), min(dp(180), dp(80 + len(result['weaknesses']) // 50 * 20)))
-        suggestions_height = max(dp(120), min(dp(180), dp(80 + len(result['suggestions']) // 50 * 20)))
+        # Text sections need more height for better readability
+        strengths_height = max(dp(180), min(dp(300), dp(120 + len(result['strengths']) // 40 * 20)))
+        weaknesses_height = max(dp(180), min(dp(300), dp(120 + len(result['weaknesses']) // 40 * 20)))
+        suggestions_height = max(dp(180), min(dp(300), dp(120 + len(result['suggestions']) // 40 * 20)))
         
         # Add items with calculated heights
         self.add_result_item('Correct Questions', correct_str, correct_height)
@@ -423,7 +450,6 @@ class StudentScreen(BaseScreen):
         self.add_result_item('Strengths', result['strengths'], strengths_height)
         self.add_result_item('Weaknesses', result['weaknesses'], weaknesses_height)
         self.add_result_item('Suggestions', result['suggestions'], suggestions_height)
-    
     def add_result_item(self, title, content, height):
         """Add an item to the results layout with proper containment."""
         # Create a container with border and background for better separation
@@ -431,7 +457,7 @@ class StudentScreen(BaseScreen):
                              size_hint_y=None, 
                              height=height, 
                              size_hint_x=1,
-                             padding=[dp(5), dp(5), dp(5), dp(5)])
+                             padding=[dp(10), dp(10), dp(10), dp(10)])
         
         # Bind the position and size for proper background drawing
         def update_rect(instance, value):
@@ -441,7 +467,7 @@ class StudentScreen(BaseScreen):
         # Add a background that updates with the container
         with container.canvas.before:
             from kivy.graphics import Color, Rectangle
-            Color(0.1, 0.1, 0.1, 0)  # Transparent background to match the app theme
+            Color(0.15, 0.15, 0.15, 0.1)  # Slightly visible background for better readability
             container.rect = Rectangle(pos=container.pos, size=container.size)
             
         container.bind(pos=update_rect, size=update_rect)
@@ -476,12 +502,14 @@ class StudentScreen(BaseScreen):
             valign='top',
             size_hint_y=None,
             text_size=(None, None),
-            color=(0, 0, 0, 1)  # Black color for content
+            color=(1, 1, 1, 1)  # White color for better visibility
         )
         
-        # Make sure text wraps properly
-        content_label.bind(width=lambda *x: content_label.setter('text_size')(content_label, (content_label.width - dp(10), None)))
+        # Make sure text wraps properly with better padding
+        content_label.bind(width=lambda *x: content_label.setter('text_size')(content_label, (content_label.width - dp(20), None)))
         content_label.bind(texture_size=content_label.setter('size'))
+        content_label.padding = [dp(10), dp(10)]
+        content_label.font_size = dp(16)  # Larger font for better readability
         
         # Add content label to content layout
         content_layout.add_widget(content_label)
@@ -492,8 +520,8 @@ class StudentScreen(BaseScreen):
         container.add_widget(item)
         self.results_layout.add_widget(container)
         
-        # Add a small spacer after each item
-        spacer = BoxLayout(size_hint_y=None, height=dp(10))
+        # Add a larger spacer after each item for better separation
+        spacer = BoxLayout(size_hint_y=None, height=dp(15))
         self.results_layout.add_widget(spacer)
     
     def clear_results(self):

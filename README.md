@@ -20,8 +20,8 @@ A mobile app for scanning bubble sheets using your device camera. Built with Kiv
 - `ocr_example.py`: Example script demonstrating OCR integration
 
 ## How to Run
-1. Install dependencies: `pip install -r requirements.txt`
-2. Run the app: `python main.py`
+1. Install dependencies: `py -m pip install -r requirements.txt`
+2. Run the app: `py main.py`
 
 ## OCR Example
 To test the OCR functionality with an example image:
@@ -134,9 +134,7 @@ To use the Gemini Vision API, you need to obtain an API key:
 2. Create a new API key
 3. Create a `.env` file in the project root directory
 4. Add your API key to the `.env` file:
-   ```
-   GEMINI_API_KEY=your_api_key_here
-   ```
+   `GEMINI_API_KEY=your_api_key_here`
 
 ### 2. Dependencies
 All required dependencies are already in the `requirements.txt` file. Make sure you have them installed:
