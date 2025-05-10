@@ -9,7 +9,7 @@ from .base_screen import BaseScreen
 
 class HomeScreen(BaseScreen):
     def __init__(self, switch_to_scanner, go_to_answer_key, go_to_students, go_to_analysis, go_to_settings, **kwargs):
-        super().__init__(title="Chexam", **kwargs)
+        super().__init__(title="", **kwargs)
         
         # Set background image
         with self.canvas.before:
@@ -21,7 +21,7 @@ class HomeScreen(BaseScreen):
         self.back_btn.disabled = True
         
         # Main layout
-        content_layout = BoxLayout(orientation='vertical', spacing=dp(5), padding=dp(10))
+        content_layout = BoxLayout(orientation='vertical', spacing=dp(10), padding=dp(10))
 
         # Title label (black font)
         label = Label(
@@ -29,7 +29,7 @@ class HomeScreen(BaseScreen):
             markup=True, 
             font_size=dp(24), 
             size_hint_y=None, 
-            height=dp(50),
+            height=dp(100),
             color=(0, 0, 0, 1)  # Black
         )
 
