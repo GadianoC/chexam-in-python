@@ -12,6 +12,15 @@ import time
 import os
 from typing import Dict, List, Tuple, Optional, Any, Union
 
+# Import secure storage for API keys
+try:
+    from ..utils.secure_storage import get_api_key, GEMINI_API_KEY as GEMINI_KEY_NAME
+    SECURE_STORAGE_AVAILABLE = True
+except ImportError:
+    SECURE_STORAGE_AVAILABLE = False
+    print("WARNING: secure_storage module not found. Falling back to environment variables.")
+
+# Fallback to dotenv if needed
 try:
     from dotenv import load_dotenv
     DOTENV_AVAILABLE = True
@@ -29,15 +38,26 @@ if not logger.handlers:
     handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
     logger.addHandler(handler)
 
-if DOTENV_AVAILABLE:
-    load_dotenv()
+# Try to get API key from secure storage first
+api_key = None
+if SECURE_STORAGE_AVAILABLE:
+    api_key = get_api_key(GEMINI_KEY_NAME)
+    if api_key:
+        GEMINI_AVAILABLE = True
+        logger.info("Gemini API key found in secure storage")
 
-api_key = os.environ.get("GEMINI_API_KEY")
-if api_key:
-    GEMINI_AVAILABLE = True
-    logger.info("Gemini API key found in environment variables")
-else:
-    logger.warning("Gemini API key not found in environment variables. Set GEMINI_API_KEY to use Gemini Vision API.")
+# Fall back to environment variables if needed
+if not api_key:
+    if DOTENV_AVAILABLE:
+        load_dotenv()
+    
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if api_key:
+        GEMINI_AVAILABLE = True
+        logger.info("Gemini API key found in environment variables")
+    else:
+        logger.warning("Gemini API key not found. Please add your API key in the Settings screen.")
+
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent"
 

@@ -8,7 +8,7 @@ from kivy.graphics import Rectangle
 from .base_screen import BaseScreen
 
 class HomeScreen(BaseScreen):
-    def __init__(self, switch_to_scanner, go_to_answer_key, go_to_students, go_to_analysis, **kwargs):
+    def __init__(self, switch_to_scanner, go_to_answer_key, go_to_students, go_to_analysis, go_to_settings, **kwargs):
         super().__init__(title="Chexam", **kwargs)
         
         # Set background image
@@ -78,6 +78,7 @@ class HomeScreen(BaseScreen):
         content_layout.add_widget(create_centered_button('🔑 Answer Key Management', (1.0, 0.3529, 0.3333, 1), go_to_answer_key))
         content_layout.add_widget(create_centered_button('👥 Student Management', (0.2745, 0.651, 1.0, 1), go_to_students))
         content_layout.add_widget(create_centered_button('📊 Class Analysis', (1.0, 0.576, 0.2745, 1), go_to_analysis))
+        content_layout.add_widget(create_centered_button('⚙️ Settings', (0.5, 0.5, 0.5, 1), go_to_settings))
 
         # Add to main screen
         self.content_area.add_widget(content_layout)

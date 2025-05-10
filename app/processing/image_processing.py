@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import logging
-from . import ocr_processing
 
 logger = logging.getLogger("chexam.image_processing")
 if not logger.handlers:
@@ -196,44 +195,7 @@ def validate_corners(corners, img_shape):
     return False
 
 
-def process_document_with_ocr(image, debug_save_path=None, debug=False):
-    """
-    Process document image with OpenCV for document detection and Tesseract for OCR and bubble detection.
-    This function combines the OpenCV document processing pipeline with Tesseract OCR.
-    
-    Args:
-        image: Input image (BGR format)
-        debug_save_path: Path to save debug images (optional)
-        debug: Whether to save debug images and log debug info
-        
-    Returns:
-        Dictionary containing:
-        - warped_color: Color version of the warped document
-        - warped_gray: Grayscale version of the warped document
-        - sheet_pts: Four corner points of the detected document (ordered)
-        - ocr_results: Results from OCR processing including text and bubbles
-    """
-    warped_color, warped_gray, sheet_pts = process_document_pipeline(image, debug_save_path, debug)
-    
-    if sheet_pts is None:
-        logger.warning("Document detection failed, OCR processing skipped")
-        return {
-            'warped_color': warped_color,
-            'warped_gray': warped_gray,
-            'sheet_pts': None,
-            'ocr_results': None
-        }
-    
-    # Process the warped document with Tesseract OCR
-    logger.debug("Processing document with Tesseract OCR...")
-    ocr_results = ocr_processing.process_document_with_ocr(warped_color, debug_save_path, debug)
-    
-    return {
-        'warped_color': warped_color,
-        'warped_gray': warped_gray,
-        'sheet_pts': sheet_pts,
-        'ocr_results': ocr_results
-    }
+# This function was removed as Tesseract OCR has been replaced by Gemini Vision API
 
 def four_point_transform(image, pts):
     rect = order_points(pts)

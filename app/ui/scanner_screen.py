@@ -151,8 +151,6 @@ class ScannerScreen(BaseScreen):
         warped_color, warped_gray, sheet_pts = process_document_pipeline(frame, debug_save_path=debug_path, debug=False)
         
         # Generate a binary version optimized for bubble detection
-        from ..processing.ocr_processing import preprocess_for_ocr
-        
         warped_thresh = self.preprocess_for_bubble_detection(warped_gray)
         
         # Disable saving processed image for reference

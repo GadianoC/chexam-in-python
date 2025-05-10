@@ -4,6 +4,5 @@ numpy
 pillow
 matplotlib
 python-dateutil
-pytesseract
 google-generativeai
 python-dotenv
