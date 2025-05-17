@@ -20,8 +20,9 @@ class AnalysisScreen(BaseScreen):
             self.bg_rect = Rectangle(source='yellow pad.jpg', size=self.size, pos=self.pos)
         self.bind(size=self._update_bg, pos=self._update_bg)
         
-        # Set back destination
+        # Set back destination and update title color
         self.set_back_destination('home')
+        self.title_label.color = (0.2, 0.6, 1, 1)  # Blue color to match buttons
         
         self.selected_answer_key_id = None
         self.class_analysis_result = None
@@ -203,7 +204,9 @@ class AnalysisScreen(BaseScreen):
         self.results_layout.add_widget(Label(
             text=f'[b]Analysis for {answer_key_name}[/b]',
             markup=True,
-            size_hint_y=None, height=dp(40)
+            size_hint_y=None, 
+            height=dp(40),
+            color=(0, 0, 0, 1)  # Black color for the title
         ))
         
         # Display overall statistics
@@ -213,44 +216,52 @@ class AnalysisScreen(BaseScreen):
         stats_grid.add_widget(Label(
             text='[b]Class Average:[/b]',
             markup=True,
-            halign='right'
+            halign='right',
+            color=(0, 0, 0, 1)  # Black color
         ))
         stats_grid.add_widget(Label(
             text=f"{self.class_analysis_result.get('class_average', 0)}%",
-            halign='left'
+            halign='left',
+            color=(0, 0, 0, 1)  # Black color
         ))
         
         # Passing rate
         stats_grid.add_widget(Label(
             text='[b]Passing Rate (≥60%):[/b]',
             markup=True,
-            halign='right'
+            halign='right',
+            color=(0, 0, 0, 1)  # Black color
         ))
         stats_grid.add_widget(Label(
             text=f"{self.class_analysis_result.get('passing_rate', 0)}%",
-            halign='left'
+            halign='left',
+            color=(0, 0, 0, 1)  # Black color
         ))
         
         # Highest score
         stats_grid.add_widget(Label(
             text='[b]Highest Score:[/b]',
             markup=True,
-            halign='right'
+            halign='right',
+            color=(0, 0, 0, 1)  # Black color
         ))
         stats_grid.add_widget(Label(
             text=f"{self.class_analysis_result.get('highest_score', 0)}%",
-            halign='left'
+            halign='left',
+            color=(0, 0, 0, 1)  # Black color
         ))
         
         # Lowest score
         stats_grid.add_widget(Label(
             text='[b]Lowest Score:[/b]',
             markup=True,
-            halign='right'
+            halign='right',
+            color=(0, 0, 0, 1)  # Black color
         ))
         stats_grid.add_widget(Label(
             text=f"{self.class_analysis_result.get('lowest_score', 0)}%",
-            halign='left'
+            halign='left',
+            color=(0, 0, 0, 1)  # Black color
         ))
         
         self.results_layout.add_widget(stats_grid)
@@ -311,7 +322,8 @@ class AnalysisScreen(BaseScreen):
             halign='left',
             valign='middle',
             size_hint_y=0.3,
-            size_hint_x=1
+            size_hint_x=1,
+            color=(0, 0, 0, 1)  # Black color
         )
         title_label.bind(size=title_label.setter('text_size'))
         item.add_widget(title_label)
@@ -322,7 +334,8 @@ class AnalysisScreen(BaseScreen):
             halign='left',
             valign='top',
             size_hint_y=0.7,
-            size_hint_x=1
+            size_hint_x=1,
+            color=(0, 0, 0, 1)  # Black color
         )
         content_label.bind(width=lambda *x: content_label.setter('text_size')(content_label, (content_label.width, None)))
         item.add_widget(content_label)
