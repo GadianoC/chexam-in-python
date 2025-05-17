@@ -5,6 +5,7 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.popup import Popup
 from kivy.metrics import dp
+from kivy.graphics import Rectangle, Color
 
 from app.db.answer_key_db import get_all_answer_keys, get_answer_key
 from api.analyze_all import analyze_class
@@ -13,6 +14,12 @@ from .base_screen import BaseScreen
 class AnalysisScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(title="Class Analysis", **kwargs)
+        
+        # Set yellow pad background
+        with self.canvas.before:
+            self.bg_rect = Rectangle(source='yellow pad.jpg', size=self.size, pos=self.pos)
+        self.bind(size=self._update_bg, pos=self._update_bg)
+        
         # Set back destination
         self.set_back_destination('home')
         
@@ -334,3 +341,8 @@ class AnalysisScreen(BaseScreen):
             size_hint=(0.6, 0.3)
         )
         popup.open()
+
+    def _update_bg(self, *args):
+        """Update the background rectangle size and position."""
+        self.bg_rect.size = self.size
+        self.bg_rect.pos = self.pos

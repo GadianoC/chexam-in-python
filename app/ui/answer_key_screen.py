@@ -21,8 +21,13 @@ class AnswerKeyScreen(BaseScreen):
             self.bg_rect = Rectangle(source='bg.png', size=self.size, pos=self.pos)
         self.bind(size=self._update_bg, pos=self._update_bg)
 
-        # Set back destination
+        # Set back destination and customize back button
         self.set_back_destination('home')
+        self.back_btn.text = "Back"
+        self.back_btn.font_size = dp(16)  # Make back button text smaller
+        
+        # Update title color to match back button blue
+        self.title_label.color = (0.2, 0.6, 1, 1)
         
         self.answer_key = None  # Will initialize after the number of questions is set
         self.logger = logging.getLogger("chexam.ui.answer_key_screen")
@@ -67,7 +72,8 @@ class AnswerKeyScreen(BaseScreen):
         num_questions_label = Label(
             text="Questions:", 
             size_hint_x=0.4,
-            font_size=dp(18)
+            font_size=dp(18),
+            color=(0.2, 0.6, 1, 1)  # Blue color for Questions label
         )
         self.num_questions_input = TextInput(
             hint_text="10-60", 
@@ -153,7 +159,7 @@ class AnswerKeyScreen(BaseScreen):
 
             # Create a header with key name input
             header = BoxLayout(orientation='horizontal', size_hint_y=None, height=50, spacing=10)
-            name_label = Label(text="Answer Key Name:", size_hint_x=0.3)
+            name_label = Label(text="Answer Key Name:", size_hint_x=0.3, color=(0.2, 0.6, 1, 1))  # Blue color for Answer Key Name
             self.key_name_input = TextInput(hint_text="Enter a name for this answer key", multiline=False, size_hint_x=0.7)
             header.add_widget(name_label)
             header.add_widget(self.key_name_input)
@@ -167,7 +173,7 @@ class AnswerKeyScreen(BaseScreen):
             self.inputs = []
             # Create dropdown (Spinner) for each question
             for i in range(1, num_questions + 1):
-                question_label = Label(text=f"Question {i}:", size_hint_y=None, height=44)
+                question_label = Label(text=f"Question {i}:", size_hint_y=None, height=44, color=(0.2, 0.6, 1, 1))  # Blue color for question numbers
 
                 # Create a Spinner for multiple-choice answers
                 spinner = Spinner(
@@ -299,7 +305,7 @@ class AnswerKeyScreen(BaseScreen):
             
             # Create a header with key name
             header = BoxLayout(orientation='horizontal', size_hint_y=None, height=50, spacing=10)
-            name_label = Label(text="Answer Key Name:", size_hint_x=0.3)
+            name_label = Label(text="Answer Key Name:", size_hint_x=0.3, color=(0.2, 0.6, 1, 1))  # Blue color for Answer Key Name
             self.key_name_input = TextInput(text=self.answer_key.name, multiline=False, size_hint_x=0.7)
             header.add_widget(name_label)
             header.add_widget(self.key_name_input)
@@ -313,7 +319,7 @@ class AnswerKeyScreen(BaseScreen):
             self.inputs = []
             # Create dropdown (Spinner) for each question
             for i in range(1, self.answer_key.num_questions + 1):
-                question_label = Label(text=f"Question {i}:", size_hint_y=None, height=44)
+                question_label = Label(text=f"Question {i}:", size_hint_y=None, height=44, color=(0.2, 0.6, 1, 1))  # Blue color for question numbers
                 
                 # Create a Spinner for multiple-choice answers
                 spinner = Spinner(

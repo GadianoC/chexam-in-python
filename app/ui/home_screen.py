@@ -74,11 +74,11 @@ class HomeScreen(BaseScreen):
         content_layout.add_widget(label)                # Title above logo
         content_layout.add_widget(logo_image)           # Logo
         content_layout.add_widget(desc_label)           # Description below logo
-        content_layout.add_widget(create_centered_button('📷 Start Scanning', (0, 0.75, 0.39, 1), switch_to_scanner))
-        content_layout.add_widget(create_centered_button('🔑 Answer Key Management', (1.0, 0.3529, 0.3333, 1), go_to_answer_key))
-        content_layout.add_widget(create_centered_button('👥 Student Management', (0.2745, 0.651, 1.0, 1), go_to_students))
-        content_layout.add_widget(create_centered_button('📊 Class Analysis', (1.0, 0.576, 0.2745, 1), go_to_analysis))
-        content_layout.add_widget(create_centered_button('⚙️ Settings', (0.5, 0.5, 0.5, 1), go_to_settings))
+        content_layout.add_widget(create_centered_button('Start Scanning', (0, 0.75, 0.39, 1), switch_to_scanner))
+        content_layout.add_widget(create_centered_button('Answer Key Management', (1.0, 0.3529, 0.3333, 1), go_to_answer_key))
+        content_layout.add_widget(create_centered_button('Student Management', (0.2745, 0.651, 1.0, 1), go_to_students))
+        content_layout.add_widget(create_centered_button('Class Analysis', (1.0, 0.576, 0.2745, 1), go_to_analysis))
+        content_layout.add_widget(create_centered_button('Settings', (0.5, 0.5, 0.5, 1), go_to_settings))
 
         # Add to main screen
         self.content_area.add_widget(content_layout)
