@@ -20,8 +20,9 @@ class AnalysisScreen(BaseScreen):
             self.bg_rect = Rectangle(source='yellow pad.jpg', size=self.size, pos=self.pos)
         self.bind(size=self._update_bg, pos=self._update_bg)
         
-        # Set back destination
+        # Set back destination and update title color
         self.set_back_destination('home')
+        self.title_label.color = (0.2, 0.6, 1, 1)  # Blue color to match buttons
         
         self.selected_answer_key_id = None
         self.class_analysis_result = None

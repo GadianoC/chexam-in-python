@@ -20,13 +20,14 @@ class StudentScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(title="Student Management", **kwargs)
         
-        # Set yellow pad background
+        # Set background
         with self.canvas.before:
-            self.bg_rect = Rectangle(source='yellow pad.jpg', size=self.size, pos=self.pos)
+            self.bg_rect = Rectangle(source='yp.png', size=self.size, pos=self.pos)
         self.bind(size=self._update_bg, pos=self._update_bg)
         
-        # Set back destination
+        # Set back destination and update title color
         self.set_back_destination('home')
+        self.title_label.color = (0.2, 0.6, 1, 1)  # Blue color to match buttons
         
         self.selected_student_id = None
         self.selected_answer_key_id = None
